@@ -1,5 +1,8 @@
 // js/storage.js
 
+// يجب استيراد EXERCISES_BY_RANK هنا لتحديد التمارين بناءً على الرتبة
+import { EXERCISES_BY_RANK } from './data.js';
+
 /**
  * كائن Storage هو واجهة للتفاعل مع LocalStorage.
  * يوفر دوال لحفظ واسترجاع بيانات المستخدم وحالة التطبيق.
@@ -20,7 +23,8 @@ export const Storage = {
         localStorage.setItem('systemSSS_userRank', 'E'); // الرتبة الافتراضية
         localStorage.setItem('systemSSS_userPoints', '0'); // النقاط الأولية
         localStorage.setItem('systemSSS_lastDailyResetDate', Date.now().toString()); // تاريخ آخر إعادة تعيين لليوم
-        localStorage.setItem('systemSSS_dailyExerciseStatus', JSON.stringify({})); // حالة التمارين اليومية (فارغة في البداية)
+        // استدعاء resetDailyExerciseStatus لتهيئة التمارين بشكل صحيح للمستخدم الجديد
+        this.resetDailyExerciseStatus();
         localStorage.setItem('systemSSS_consecutiveDaysCompleted', '0'); // الأيام المتتالية المكتملة
         localStorage.setItem('systemSSS_dailyExerciseAdjustments', JSON.stringify({ pushups: 0, runMinutes: 0, jumps: 0, situps: 0 })); // تعديلات التمارين (للعقوبات)
     },
@@ -104,21 +108,25 @@ export const Storage = {
      */
     getDailyExerciseStatus: function() {
         const status = localStorage.getItem('systemSSS_dailyExerciseStatus');
+        // إذا لم يتم العثور على حالة، قم بتهيئتها ككائن فارغ
+        // وسيتم ملؤها بواسطة resetDailyExerciseStatus لاحقًا
         return status ? JSON.parse(status) : {};
     },
 
     /**
-     * إعادة تعيين حالة التمارين اليومية إلى غير مكتملة.
+     * إعادة تعيين حالة التمارين اليومية إلى غير مكتملة بناءً على الرتبة الحالية.
+     * يتم استدعاؤها عند بداية يوم جديد أو عند تسجيل مستخدم جديد.
      */
     resetDailyExerciseStatus: function() {
-        const userRank = Storage.getUserRank();
-        const exercises = {};
-        // تهيئة التمارين لليوم الجديد كغير مكتملة
-        // يجب أن يتم جلب التمارين من data.js لتحديد التمارين الخاصة بالرتبة الحالية
-        // ولكن للحفاظ على البساطة هنا، نفترض أن لدينا مفاتيح التمارين القياسية
-        // هذا الجزء يعتمد على استدعاءات من App.js لتحديد التمارين الفعلية
-        // لذا هنا، فقط نُعيد تعيينها لكائن فارغ ليدل على عدم إكمال أي تمرين بعد
-        localStorage.setItem('systemSSS_dailyExerciseStatus', JSON.stringify({}));
+        const userRank = this.getUserRank(); // الحصول على الرتبة الحالية للمستخدم
+        const exercisesForRank = EXERCISES_BY_RANK[userRank]?.exercises || []; // جلب التمارين لتلك الرتبة
+
+        const newDailyStatus = {};
+        exercisesForRank.forEach(exercise => {
+            newDailyStatus[exercise.key] = false; // تعيين حالة كل تمرين إلى "غير مكتمل" (false)
+        });
+
+        localStorage.setItem('systemSSS_dailyExerciseStatus', JSON.stringify(newDailyStatus));
     },
 
     /**
