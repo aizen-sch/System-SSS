@@ -1,137 +1,170 @@
 // js/storage.js
 
+/**
+ * كائن Storage هو واجهة للتفاعل مع LocalStorage.
+ * يوفر دوال لحفظ واسترجاع بيانات المستخدم وحالة التطبيق.
+ */
 export const Storage = {
-    // المفاتيح المستخدمة في LocalStorage
-    KEYS: {
-        IS_REGISTERED: 'is_registered',
-        USER_DETAILS: 'user_details',
-        USER_RANK: 'user_rank',
-        USER_POINTS: 'user_points',
-        LAST_DAILY_RESET_DATE: 'last_daily_reset_date',
-        DAILY_EXERCISE_STATUS: 'daily_exercise_status',
-        CONSECUTIVE_DAYS_COMPLETED: 'consecutive_days_completed',
-        DAILY_EXERCISE_ADJUSTMENTS: 'daily_exercise_adjustments' // لتخزين تعديلات التمارين بسبب العقوبات
+    /**
+     * حفظ معلومات المستخدم بعد التسجيل.
+     * @param {string} name - اسم المستخدم.
+     * @param {number} age - عمر المستخدم.
+     * @param {number} height - طول المستخدم.
+     * @param {number} weight - وزن المستخدم.
+     * @param {string} bloodType - فصيلة دم المستخدم.
+     */
+    registerUser: function(name, age, height, weight, bloodType) {
+        const userInfo = { name, age, height, weight, bloodType };
+        localStorage.setItem('systemSSS_userInfo', JSON.stringify(userInfo));
+        // تهيئة البيانات الأولية للمستخدم الجديد
+        localStorage.setItem('systemSSS_userRank', 'E'); // الرتبة الافتراضية
+        localStorage.setItem('systemSSS_userPoints', '0'); // النقاط الأولية
+        localStorage.setItem('systemSSS_lastDailyResetDate', Date.now().toString()); // تاريخ آخر إعادة تعيين لليوم
+        localStorage.setItem('systemSSS_dailyExerciseStatus', JSON.stringify({})); // حالة التمارين اليومية (فارغة في البداية)
+        localStorage.setItem('systemSSS_consecutiveDaysCompleted', '0'); // الأيام المتتالية المكتملة
+        localStorage.setItem('systemSSS_dailyExerciseAdjustments', JSON.stringify({ pushups: 0, runMinutes: 0, jumps: 0, situps: 0 })); // تعديلات التمارين (للعقوبات)
     },
 
-    // حفظ البيانات
-    saveItem: function(key, value) {
-        localStorage.setItem(key, JSON.stringify(value));
-    },
-
-    // قراءة البيانات
-    getItem: function(key) {
-        const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : null;
-    },
-
-    // إزالة البيانات
-    removeItem: function(key) {
-        localStorage.removeItem(key);
-    },
-
-    // ------------- وظائف خاصة بالمستخدم -----------------
-
-    // حفظ تفاصيل المستخدم
-    saveUserDetails: function(details) {
-        this.saveItem(this.KEYS.USER_DETAILS, details);
-        this.saveItem(this.KEYS.IS_REGISTERED, true);
-    },
-
-    // الحصول على تفاصيل المستخدم
-    getUserDetails: function() {
-        return this.getItem(this.KEYS.USER_DETAILS);
-    },
-
-    // التحقق مما إذا كان المستخدم مسجلاً
+    /**
+     * التحقق مما إذا كان المستخدم قد سجل معلوماته من قبل.
+     * @returns {boolean} - true إذا كان مسجلاً، false بخلاف ذلك.
+     */
     isUserRegistered: function() {
-        return this.getItem(this.KEYS.IS_REGISTERED) === true;
+        return localStorage.getItem('systemSSS_userInfo') !== null;
     },
 
-    // حفظ رتبة المستخدم
+    /**
+     * الحصول على معلومات المستخدم.
+     * @returns {object|null} - كائن يحتوي على معلومات المستخدم أو null إذا لم يكن مسجلاً.
+     */
+    getUserInfo: function() {
+        const userInfo = localStorage.getItem('systemSSS_userInfo');
+        return userInfo ? JSON.parse(userInfo) : null;
+    },
+
+    /**
+     * حفظ رتبة المستخدم.
+     * @param {string} rank - الرتبة الجديدة للمستخدم.
+     */
     saveUserRank: function(rank) {
-        this.saveItem(this.KEYS.USER_RANK, rank);
+        localStorage.setItem('systemSSS_userRank', rank);
     },
 
-    // الحصول على رتبة المستخدم
+    /**
+     * الحصول على رتبة المستخدم.
+     * @returns {string} - رتبة المستخدم.
+     */
     getUserRank: function() {
-        return this.getItem(this.KEYS.USER_RANK) || "E"; // القيمة الافتراضية E
+        return localStorage.getItem('systemSSS_userRank') || 'E'; // الرتبة الافتراضية 'E'
     },
 
-    // حفظ نقاط المستخدم
+    /**
+     * حفظ نقاط المستخدم.
+     * @param {number} points - النقاط الجديدة للمستخدم.
+     */
     saveUserPoints: function(points) {
-        this.saveItem(this.KEYS.USER_POINTS, points);
+        localStorage.setItem('systemSSS_userPoints', points.toString());
     },
 
-    // الحصول على نقاط المستخدم
+    /**
+     * الحصول على نقاط المستخدم.
+     * @returns {number} - نقاط المستخدم الحالية.
+     */
     getUserPoints: function() {
-        return this.getItem(this.KEYS.USER_POINTS) || 0;
+        return parseInt(localStorage.getItem('systemSSS_userPoints') || '0');
     },
 
-    // حفظ تاريخ آخر إعادة تعيين يومية (Timestamp)
+    /**
+     * حفظ تاريخ آخر إعادة تعيين للتمارين اليومية.
+     * @param {number} timestamp - الطابع الزمني لآخر إعادة تعيين.
+     */
     saveLastDailyResetDate: function(timestamp) {
-        this.saveItem(this.KEYS.LAST_DAILY_RESET_DATE, timestamp);
+        localStorage.setItem('systemSSS_lastDailyResetDate', timestamp.toString());
     },
 
-    // الحصول على تاريخ آخر إعادة تعيين يومية
+    /**
+     * الحصول على تاريخ آخر إعادة تعيين للتمارين اليومية.
+     * @returns {number} - الطابع الزمني لآخر إعادة تعيين، أو 0 إذا لم يكن هناك.
+     */
     getLastDailyResetDate: function() {
-        return this.getItem(this.KEYS.LAST_DAILY_RESET_DATE) || 0;
+        return parseInt(localStorage.getItem('systemSSS_lastDailyResetDate') || '0');
     },
 
-    // حفظ حالة إكمال تمارين اليوم (كائن يحتوي على true/false لكل تمرين)
+    /**
+     * حفظ حالة إكمال التمارين اليومية.
+     * @param {object} status - كائن يمثل حالة كل تمرين (مكتمل/غير مكتمل).
+     */
     saveDailyExerciseStatus: function(status) {
-        this.saveItem(this.KEYS.DAILY_EXERCISE_STATUS, status);
+        localStorage.setItem('systemSSS_dailyExerciseStatus', JSON.stringify(status));
     },
 
-    // الحصول على حالة إكمال تمارين اليوم
+    /**
+     * الحصول على حالة إكمال التمارين اليومية.
+     * @returns {object} - كائن يمثل حالة كل تمرين، أو كائن فارغ إذا لم يكن هناك.
+     */
     getDailyExerciseStatus: function() {
-        // قيم افتراضية إذا لم يتم تخزين الحالة بعد
-        return this.getItem(this.KEYS.DAILY_EXERCISE_STATUS) || {
-            pushups: false,
-            run: false,
-            jump: false,
-            situps: false
-        };
+        const status = localStorage.getItem('systemSSS_dailyExerciseStatus');
+        return status ? JSON.parse(status) : {};
     },
 
-    // إعادة تعيين حالة تمارين اليوم إلى غير مكتملة
+    /**
+     * إعادة تعيين حالة التمارين اليومية إلى غير مكتملة.
+     */
     resetDailyExerciseStatus: function() {
-        this.saveDailyExerciseStatus({
-            pushups: false,
-            run: false,
-            jump: false,
-            situps: false
-        });
+        const userRank = Storage.getUserRank();
+        const exercises = {};
+        // تهيئة التمارين لليوم الجديد كغير مكتملة
+        // يجب أن يتم جلب التمارين من data.js لتحديد التمارين الخاصة بالرتبة الحالية
+        // ولكن للحفاظ على البساطة هنا، نفترض أن لدينا مفاتيح التمارين القياسية
+        // هذا الجزء يعتمد على استدعاءات من App.js لتحديد التمارين الفعلية
+        // لذا هنا، فقط نُعيد تعيينها لكائن فارغ ليدل على عدم إكمال أي تمرين بعد
+        localStorage.setItem('systemSSS_dailyExerciseStatus', JSON.stringify({}));
     },
 
-    // حفظ عدد الأيام المتتالية المكتملة
+    /**
+     * حفظ الأيام المتتالية المكتملة.
+     * @param {number} days - عدد الأيام المتتالية.
+     */
     saveConsecutiveDaysCompleted: function(days) {
-        this.saveItem(this.KEYS.CONSECUTIVE_DAYS_COMPLETED, days);
+        localStorage.setItem('systemSSS_consecutiveDaysCompleted', days.toString());
     },
 
-    // الحصول على عدد الأيام المتتالية المكتملة
+    /**
+     * الحصول على عدد الأيام المتتالية المكتملة.
+     * @returns {number} - عدد الأيام المتتالية.
+     */
     getConsecutiveDaysCompleted: function() {
-        return this.getItem(this.KEYS.CONSECUTIVE_DAYS_COMPLETED) || 0;
+        return parseInt(localStorage.getItem('systemSSS_consecutiveDaysCompleted') || '0');
     },
 
-    // حفظ تعديلات التمارين بسبب العقوبات
+    /**
+     * حفظ التعديلات على التمارين اليومية (بسبب العقوبات).
+     * @param {object} adjustments - كائن يحتوي على التعديلات.
+     */
     saveDailyExerciseAdjustments: function(adjustments) {
-        this.saveItem(this.KEYS.DAILY_EXERCISE_ADJUSTMENTS, adjustments);
+        localStorage.setItem('systemSSS_dailyExerciseAdjustments', JSON.stringify(adjustments));
     },
 
-    // الحصول على تعديلات التمارين بسبب العقوبات
+    /**
+     * الحصول على التعديلات الحالية على التمارين اليومية.
+     * @returns {object} - كائن يحتوي على التعديلات، أو كائن افتراضي.
+     */
     getDailyExerciseAdjustments: function() {
-        return this.getItem(this.KEYS.DAILY_EXERCISE_ADJUSTMENTS) || {
-            pushups: 0,
-            runMinutes: 0,
-            jumps: 0,
-            situps: 0
-        };
+        const adjustments = localStorage.getItem('systemSSS_dailyExerciseAdjustments');
+        return adjustments ? JSON.parse(adjustments) : { pushups: 0, runMinutes: 0, jumps: 0, situps: 0 };
     },
 
-    // مسح جميع بيانات المستخدم (لأغراض الاختبار أو تسجيل الخروج)
-    clearAllUserData: function() {
-        for (const key in this.KEYS) {
-            this.removeItem(this.KEYS[key]);
-        }
+    /**
+     * إعادة تعيين جميع بيانات المستخدم في LocalStorage.
+     * (مفيدة لزر "تسجيل الخروج / إعادة تعيين البيانات" إذا قررت إعادته).
+     */
+    resetAllData: function() {
+        localStorage.removeItem('systemSSS_userInfo');
+        localStorage.removeItem('systemSSS_userRank');
+        localStorage.removeItem('systemSSS_userPoints');
+        localStorage.removeItem('systemSSS_lastDailyResetDate');
+        localStorage.removeItem('systemSSS_dailyExerciseStatus');
+        localStorage.removeItem('systemSSS_consecutiveDaysCompleted');
+        localStorage.removeItem('systemSSS_dailyExerciseAdjustments');
     }
 };
