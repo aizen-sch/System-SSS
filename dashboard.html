@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم System SSS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="system-background">
+    <div class="container dashboard-container">
+        <div class="header-section">
+            <h2 id="userNameDisplay">أهلاً بك يا [اسم المستخدم]!</h2>
+            <div class="user-stats">
+                <p>الرتبة: <span id="userRankDisplay">E</span></p>
+                <p>النقاط: <span id="userPointsDisplay">0</span></p>
+            </div>
+            <button id="viewInfoBtn" class="btn secondary-btn">معلوماتي</button>
+        </div>
+
+        <hr class="divider">
+
+        <div class="timer-section">
+            <h3>الوقت المتبقي لتمارين اليوم:</h3>
+            <div id="countdownTimer" class="timer-display">24:00:00</div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="exercises-section">
+            <h3>تمارين اليوم:</h3>
+            <ul id="dailyExercisesList">
+                </ul>
+            <button id="completeAllBtn" class="btn primary-btn" style="display: none;">أكملت جميع المهام لهذا اليوم!</button>
+        </div>
+
+        <hr class="divider">
+
+        <div class="footer-section">
+            <button id="logoutBtn" class="btn danger-btn">تسجيل خروج / إعادة تعيين البيانات</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/storage.js"></script>
+    <script type="module" src="js/data.js"></script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

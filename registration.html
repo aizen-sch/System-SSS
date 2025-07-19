@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل في System SSS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="system-background">
+    <div class="container auth-container">
+        <h2>انضم إلى System SSS</h2>
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="name">الاسم:</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label for="age">العمر:</label>
+                <input type="number" id="age" required>
+            </div>
+            <div class="form-group">
+                <label for="height">الطول (سم):</label>
+                <input type="number" step="0.1" id="height" required>
+            </div>
+            <div class="form-group">
+                <label for="weight">الوزن (كجم):</label>
+                <input type="number" step="0.1" id="weight" required>
+            </div>
+            <div class="form-group">
+                <label for="bloodType">فصيلة الدم:</label>
+                <input type="text" id="bloodType" required>
+            </div>
+            <button type="submit" class="btn primary-btn">تسجيل الدخول</button>
+        </form>
+    </div>
+
+    <script type="module" src="js/storage.js"></script>
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
