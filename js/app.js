@@ -1,5 +1,8 @@
+// js/app.js
+
 import { Storage } from './storage.js';
 import { EXERCISES_BY_RANK, RANKS, RANK_UP_POINTS, PENALTY_RATIO_POINTS } from './data.js';
+// تأكد أن startTimer و stopTimer مستوردتان هنا
 import { updateDashboardHeader, updateDailyExercisesDisplay, displayUserInfo, startTimer, stopTimer } from './ui.js';
 
 let dailyTimerInterval; // لتخزين معرف العداد

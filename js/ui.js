@@ -1,119 +1,157 @@
 // js/ui.js
 
 import { Storage } from './storage.js';
-import { EXERCISES_BY_RANK, PENALTY_RATIO_EXERCISE } from './data.js';
+import { EXERCISES_BY_RANK } from './data.js';
 
-// تحديث عرض اسم المستخدم، الرتبة، والنقاط في لوحة التحكم
+/**
+ * تحديث معلومات الرأس في لوحة التحكم (اسم المستخدم، الرتبة، النقاط).
+ */
 export function updateDashboardHeader() {
+    const userInfo = Storage.getUserInfo();
     const userNameDisplay = document.getElementById('userNameDisplay');
     const userRankDisplay = document.getElementById('userRankDisplay');
     const userPointsDisplay = document.getElementById('userPointsDisplay');
 
     if (userNameDisplay) {
-        const userDetails = Storage.getUserDetails();
-        userNameDisplay.textContent = `أهلاً بك يا ${userDetails ? userDetails.name : 'مستخدم'}!`;
+        userNameDisplay.textContent = `أهلاً بك يا ${userInfo ? userInfo.name : '[اسم المستخدم]'}!`;
     }
     if (userRankDisplay) {
         userRankDisplay.textContent = Storage.getUserRank();
     }
     if (userPointsDisplay) {
-        userPointsDisplay.textContent = Storage.getUserPoints();
+        userPointsDisplay.textContent = Storage.getUserPoints().toString();
     }
 }
 
-// عرض معلومات المستخدم في صفحة user_info.html
+/**
+ * عرض معلومات المستخدم في صفحة معلومات الحساب.
+ */
 export function displayUserInfo() {
-    const userDetails = Storage.getUserDetails();
-    if (userDetails) {
-        document.getElementById('infoName').textContent = userDetails.name;
-        document.getElementById('infoAge').textContent = userDetails.age;
-        document.getElementById('infoHeight').textContent = userDetails.height;
-        document.getElementById('infoWeight').textContent = userDetails.weight;
-        document.getElementById('infoBloodType').textContent = userDetails.bloodType;
+    const userInfo = Storage.getUserInfo();
+    if (userInfo) {
+        document.getElementById('infoName').textContent = userInfo.name;
+        document.getElementById('infoAge').textContent = userInfo.age;
+        document.getElementById('infoHeight').textContent = userInfo.height;
+        document.getElementById('infoWeight').textContent = userInfo.weight;
+        document.getElementById('infoBloodType').textContent = userInfo.bloodType;
     }
 }
 
-// تحديث عرض التمارين اليومية
-export function updateDailyExercisesDisplay(currentRank, dailyStatus, adjustments) {
-    const exercisesList = document.getElementById('dailyExercisesList');
-    if (!exercisesList) return;
+/**
+ * تحديث وعرض قائمة التمارين اليومية.
+ * @param {string} userRank - الرتبة الحالية للمستخدم.
+ * @param {object} dailyStatus - حالة إكمال كل تمرين (true/false).
+ * @param {object} adjustments - التعديلات على قيم التمارين (بسبب العقوبات).
+ */
+export function updateDailyExercisesDisplay(userRank, dailyStatus, adjustments) {
+    const dailyExercisesList = document.getElementById('dailyExercisesList');
+    if (!dailyExercisesList) return;
 
-    exercisesList.innerHTML = ''; // مسح القائمة الحالية
+    dailyExercisesList.innerHTML = ''; // مسح القائمة الحالية
 
-    const rankExercises = EXERCISES_BY_RANK[currentRank];
-    if (!rankExercises) {
-        exercisesList.innerHTML = '<li>لا توجد تمارين محددة لهذه الرتبة.</li>';
-        return;
+    const exercisesForRank = EXERCISES_BY_RANK[userRank]?.exercises || [];
+
+    // إخفاء زر "أكملت جميع المهام لهذا اليوم!" افتراضياً
+    const completeAllBtn = document.getElementById('completeAllBtn');
+    if (completeAllBtn) {
+        completeAllBtn.style.display = 'none';
     }
 
-    // تطبيق التعديلات بسبب العقوبات (إذا كانت الرتبة أقل من S)
-    const currentAdjustments = currentRank < 'S' ? adjustments : { pushups: 0, runMinutes: 0, jumps: 0, situps: 0 };
+    let allExercisesCompleted = true; // نفترض أن جميعها مكتملة حتى نجد عكس ذلك
 
-    const exercises = [
-        { key: 'pushups', name: 'عداد ضغط', value: rankExercises.pushups + currentAdjustments.pushups, unit: 'عدة' },
-        { key: 'run', name: 'ركض', value: rankExercises.runMinutes + currentAdjustments.runMinutes, unit: 'دقيقة' },
-        { key: 'jump', name: 'جومبا', value: rankExercises.jumps + currentAdjustments.jumps, unit: 'عدة' },
-        { key: 'situps', name: 'بطن', value: rankExercises.situps + currentAdjustments.situps, unit: 'عدة' }
-    ];
+    exercisesForRank.forEach(exercise => {
+        const li = document.createElement('li');
+        const isCompleted = dailyStatus[exercise.key] || false;
+        
+        // تطبيق التعديلات على قيمة التمرين
+        let adjustedValue = exercise.baseValue;
+        if (exercise.key === 'run') {
+            adjustedValue += (adjustments.runMinutes || 0);
+        } else if (exercise.key === 'pushups') {
+            adjustedValue += (adjustments.pushups || 0);
+        } else if (exercise.key === 'jumps') {
+            adjustedValue += (adjustments.jumps || 0);
+        } else if (exercise.key === 'situps') {
+            adjustedValue += (adjustments.situps || 0);
+        }
+        // ضمان ألا تكون القيمة أقل من 1
+        adjustedValue = Math.max(1, adjustedValue);
 
-    exercises.forEach(ex => {
-        const listItem = document.createElement('li');
-        const isCompleted = dailyStatus[ex.key + 's'] || dailyStatus[ex.key]; // ليتوافق مع المفاتيح "pushups" و "run"
-        listItem.classList.toggle('completed', isCompleted);
+        li.className = 'exercise-item';
+        if (isCompleted) {
+            li.classList.add('completed');
+        } else {
+            allExercisesCompleted = false; // إذا وجدنا تمرينًا واحدًا غير مكتمل، فليست كلها مكتملة
+        }
 
-        listItem.innerHTML = `
-            <span>${ex.name}: ${ex.value} ${ex.unit}</span>
-            <button data-exercise-key="${ex.key}" ${isCompleted ? 'disabled class="disabled"' : ''}>
-                ${isCompleted ? 'تم الإنجاز' : 'تم'}
+        li.innerHTML = `
+            <span>${exercise.name}: ${adjustedValue} ${exercise.unit}</span>
+            <button class="btn small-btn complete-btn" data-exercise-key="${exercise.key}" ${isCompleted ? 'disabled' : ''}>
+                ${isCompleted ? 'تم الإنجاز' : 'إنجاز'}
             </button>
         `;
-        exercisesList.appendChild(listItem);
+        dailyExercisesList.appendChild(li);
     });
 
-    // تحديث زر "أكملت جميع المهام"
-    const completeAllBtn = document.getElementById('completeAllBtn');
-    const allExercisesDone = Object.values(dailyStatus).every(status => status === true);
-    if (completeAllBtn) {
-        if (allExercisesDone) {
+    // إذا كانت جميع التمارين مكتملة، أظهر زر "أكملت جميع المهام لهذا اليوم!" وقم بتعطيله
+    if (allExercisesCompleted) {
+        if (completeAllBtn) {
             completeAllBtn.style.display = 'block';
             completeAllBtn.disabled = true;
             completeAllBtn.classList.add('disabled');
-        } else {
-            completeAllBtn.style.display = 'none';
         }
     }
 }
 
-// تحديث عرض العداد
-export function updateTimerDisplay(remainingMillis) {
-    const timerDisplay = document.getElementById('countdownTimer');
-    if (!timerDisplay) return;
 
-    if (remainingMillis <= 0) {
-        timerDisplay.textContent = '00:00:00';
-        timerDisplay.classList.remove('red-alert');
-        timerDisplay.classList.add('green-complete');
-        return;
-    }
+/**
+ * دالة لبدء عداد تنازلي وعرضه.
+ * @param {string} elementId - ID العنصر الذي سيعرض العداد.
+ * @param {number} durationMs - المدة بالمللي ثانية.
+ * @param {function} onComplete - دالة يتم تشغيلها عند انتهاء العداد.
+ * @returns {number} - معرف الفاصل الزمني للعداد.
+ */
+export function startTimer(elementId, durationMs, onComplete) {
+    const timerElement = document.getElementById(elementId);
+    if (!timerElement) return;
 
-    const totalSeconds = Math.floor(remainingMillis / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+    let remainingTime = durationMs;
 
-    const formattedTime = [hours, minutes, seconds]
-        .map(unit => unit.toString().padStart(2, '0'))
-        .join(':');
+    // تحديث العداد كل ثانية
+    const interval = setInterval(() => {
+        remainingTime -= 1000; // خصم ثانية واحدة
 
-    timerDisplay.textContent = formattedTime;
+        if (remainingTime <= 0) {
+            clearInterval(interval); // إيقاف العداد
+            timerElement.textContent = '00:00:00';
+            if (onComplete) {
+                onComplete(); // تشغيل الدالة عند الانتهاء
+            }
+            return;
+        }
 
-    // تغيير لون العداد بناءً على الوقت المتبقي
-    // مثلاً، إذا بقي أقل من ساعة واحدة (3600000 مللي ثانية)
-    if (remainingMillis < 3600000 && remainingMillis > 0) {
-        timerDisplay.classList.add('red-alert');
-        timerDisplay.classList.remove('green-complete');
-    } else {
-        timerDisplay.classList.remove('red-alert');
-        timerDisplay.classList.add('green-complete');
+        const totalSeconds = Math.floor(remainingTime / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        // تنسيق الوقت ليظهر كـ HH:MM:SS
+        const formattedTime = [hours, minutes, seconds]
+            .map(unit => unit < 10 ? '0' + unit : unit)
+            .join(':');
+
+        timerElement.textContent = formattedTime;
+    }, 1000); // تحديث كل ثانية
+
+    return interval; // إعادة معرف الفاصل الزمني لإيقافه لاحقًا
+}
+
+/**
+ * دالة لإيقاف العداد.
+ * @param {number} intervalId - معرف الفاصل الزمني الذي تم إرجاعه من startTimer.
+ */
+export function stopTimer(intervalId) {
+    if (intervalId) {
+        clearInterval(intervalId);
     }
 }
