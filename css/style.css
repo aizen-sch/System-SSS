@@ -1,3 +1,4 @@
+/* General Body Styles */
 body {
     font-family: 'Arial', sans-serif;
     margin: 0;
@@ -6,271 +7,338 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    color: #FFFFFF; /* لون النص الافتراضي أبيض */
-    direction: rtl; /* لجعل الاتجاه من اليمين لليسار */
-    text-align: right; /* لمحاذاة النص لليمين */
+    background-color: #1a1a2e; /* Dark blue background */
+    color: #e0e0e0; /* Light gray text */
+    direction: rtl; /* Right-to-left for Arabic */
+    text-align: right;
 }
 
-/* الألوان الأساسية */
-:root {
-    --dark-blue: #00008B;       /* أزرق غامق */
-    --deep-purple: #673AB7;     /* بنفسجي غامق */
-    --system-black: #121212;    /* أسود خاص بالنظام */
-    --red-alert: #FF0000;       /* لون للعداد الأحمر */
-    --green-complete: #00FF00;  /* لون للعداد الأخضر */
-    --white: #FFFFFF;
-    --light-grey: #cccccc;
-}
-
+/* Background specific to the system (if needed different from body) */
 .system-background {
-    background-color: var(--system-black);
+    background-image: linear-gradient(to bottom, #1a1a2e, #16213e);
 }
 
+/* Container for content */
 .container {
-    background-color: #1a1a1a; /* خلفية أغمق قليلاً للعناصر */
+    background-color: #0f3460; /* Darker blue for containers */
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     width: 90%;
     max-width: 500px;
-    text-align: center; /* النصوص داخل الكونتينر نفسها تكون بالوسط */
+    text-align: center;
+    animation: fadeIn 1s ease-in-out;
 }
 
-.auth-container {
-    text-align: right; /* حقول النموذج والنصوص داخلها تكون لليمين */
+/* Dashboard specific container adjustments */
+.dashboard-container {
+    max-width: 700px;
 }
 
+/* Headings */
 h1, h2, h3 {
-    color: var(--dark-blue);
+    color: #e94560; /* Reddish accent color */
     margin-bottom: 20px;
 }
 
+/* Paragraphs */
 p {
-    color: var(--white);
+    margin-bottom: 10px;
     line-height: 1.6;
 }
 
+/* Form Group Styles */
 .form-group {
     margin-bottom: 15px;
-    text-align: right;
+    text-align: right; /* Align labels and inputs to the right */
 }
 
 .form-group label {
     display: block;
     margin-bottom: 5px;
-    color: var(--deep-purple);
     font-weight: bold;
+    color: #cccccc;
 }
 
 .form-group input[type="text"],
-.form-group input[type="number"] {
-    width: calc(100% - 20px); /* Adjust for padding */
+.form-group input[type="number"],
+.form-group select {
+    width: calc(100% - 20px); /* Adjust width for padding */
     padding: 10px;
-    border: 1px solid var(--dark-blue);
+    border: 1px solid #0f3460;
     border-radius: 5px;
-    background-color: #2a2a2a; /* خلفية حقول الإدخال */
-    color: var(--white);
-    font-size: 16px;
-    outline: none; /* إزالة الحدود عند التركيز */
+    background-color: #0c2d4f; /* Slightly lighter than container for input contrast */
+    color: #e0e0e0;
+    font-size: 1rem;
+    box-sizing: border-box; /* Include padding in width */
 }
 
 .form-group input[type="text"]:focus,
-.form-group input[type="number"]:focus {
-    border-color: var(--deep-purple);
-    box-shadow: 0 0 8px rgba(103, 58, 183, 0.5); /* ظل عند التركيز */
+.form-group input[type="number"]:focus,
+.form-group select:focus {
+    border-color: #e94560;
+    outline: none;
+    box-shadow: 0 0 5px rgba(233, 69, 96, 0.5);
 }
 
+/* Button Styles */
 .btn {
-    display: block;
-    width: 100%;
-    padding: 12px 20px;
-    margin-top: 15px;
+    display: inline-block;
+    padding: 12px 25px;
+    margin: 10px 5px;
     border: none;
     border-radius: 5px;
-    font-size: 18px;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    text-decoration: none; /* For anchor buttons */
 }
 
 .primary-btn {
-    background-color: var(--dark-blue);
-    color: var(--white);
+    background-color: #e94560; /* Reddish primary button */
+    color: white;
 }
 
 .primary-btn:hover {
-    background-color: #0000CD; /* درجة أفتح قليلاً للأزرق */
+    background-color: #c93a52;
     transform: translateY(-2px);
 }
 
 .secondary-btn {
-    background-color: var(--deep-purple);
-    color: var(--white);
+    background-color: #533483; /* Purple secondary button */
+    color: white;
 }
 
 .secondary-btn:hover {
-    background-color: #7B1FA2; /* درجة أغمق قليلاً للبنفسجي */
+    background-color: #422a69;
     transform: translateY(-2px);
 }
 
 .danger-btn {
-    background-color: #CC0000; /* أحمر للخروج/إعادة التعيين */
-    color: var(--white);
+    background-color: #dc3545; /* Red for destructive actions */
+    color: white;
 }
 
 .danger-btn:hover {
-    background-color: #FF0000;
+    background-color: #c82333;
     transform: translateY(-2px);
+}
+
+.small-btn {
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    margin: 0; /* Override general margin */
+}
+
+/* User Info Display */
+.user-details p {
+    background-color: #16213e; /* Darker background for info items */
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    text-align: right;
+    display: flex; /* Use flexbox for alignment */
+    justify-content: space-between; /* Space out key and value */
+    align-items: center;
+}
+
+.user-details p strong {
+    color: #e94560; /* Highlight labels */
+    flex-shrink: 0; /* Prevent label from shrinking */
+    margin-left: 10px; /* Space between label and value */
+}
+
+.user-details p span {
+    flex-grow: 1; /* Allow value to take up remaining space */
+    text-align: left; /* Align value to the left */
+}
+
+
+/* Dashboard Sections */
+.header-section,
+.timer-section,
+.exercises-section,
+.footer-section {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #2e4a86; /* Subtle separator */
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+.header-section h2 {
+    margin: 0;
+    flex-grow: 1; /* Allow heading to take available space */
 }
 
 .user-stats {
     display: flex;
-    justify-content: space-around;
-    margin-top: 15px;
-    margin-bottom: 20px;
+    gap: 20px;
+    margin-right: 20px;
+    flex-wrap: wrap;
 }
 
 .user-stats p {
-    font-size: 1.1em;
+    margin: 0;
+    color: #cccccc;
     font-weight: bold;
-    color: var(--white);
 }
 
-.header-section {
-    margin-bottom: 20px;
-}
-
-.timer-section {
-    margin-bottom: 20px;
-}
-
-.timer-display {
-    font-size: 3em;
-    font-weight: bold;
-    color: var(--green-complete); /* اللون الأخضر الافتراضي للعداد */
-    margin: 10px 0;
-    padding: 10px;
-    border: 2px solid var(--green-complete);
-    border-radius: 10px;
-    background-color: #222;
-    display: inline-block; /* لكي يأخذ العرض المناسب لمحتواه */
-    min-width: 200px; /* لتثبيت العرض قليلاً */
-}
-
-.timer-display.red-alert {
-    color: var(--red-alert);
-    border-color: var(--red-alert);
-}
-
-.timer-display.green-complete {
-    color: var(--green-complete);
-    border-color: var(--green-complete);
-}
-
-.exercises-section ul {
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
-}
-
-.exercises-section li {
-    background-color: #2a2a2a;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid var(--deep-purple);
-}
-
-.exercises-section li.completed {
-    background-color: #3a3a3a; /* لون مختلف للمهام المكتملة */
-    border-color: var(--green-complete);
-    opacity: 0.8;
-}
-
-.exercises-section li span {
+.user-stats span {
+    color: #e94560;
     font-size: 1.1em;
-    color: var(--white);
-}
-
-.exercises-section li button {
-    padding: 8px 15px;
-    background-color: var(--dark-blue);
-    color: var(--white);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.2s ease;
-}
-
-.exercises-section li button.disabled {
-    background-color: #555;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.exercises-section li button:hover:not(.disabled) {
-    background-color: #0000CD;
 }
 
 .divider {
     border: 0;
     height: 1px;
-    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), var(--deep-purple), rgba(0, 0, 0, 0));
-    margin: 30px 0;
+    background-image: linear-gradient(to right, rgba(233, 69, 96, 0), rgba(233, 69, 96, 0.75), rgba(233, 69, 96, 0));
+    margin: 20px 0;
 }
 
-.footer-section {
-    margin-top: 30px;
+/* Timer Display */
+.timer-display {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #6cfd5c; /* Bright green for timer */
+    background-color: #16213e;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px auto;
+    box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.3);
+    width: fit-content;
 }
 
-.user-details p {
-    text-align: right;
-    margin-bottom: 8px;
+/* Exercises List */
+.exercises-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.exercise-item {
+    background-color: #16213e;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.exercise-item span {
     font-size: 1.1em;
+    color: #e0e0e0;
 }
 
-.user-details p strong {
-    color: var(--dark-blue);
+.exercise-item.completed {
+    background-color: #2a3b5b; /* Slightly different background for completed */
+    opacity: 0.7;
+    text-decoration: line-through;
 }
 
-.user-details p span {
-    color: var(--white);
+.exercise-item.completed span {
+    color: #a0a0a0;
 }
 
-a {
-    color: var(--deep-purple);
-    text-decoration: none;
-    transition: color 0.2s ease;
+.complete-btn[disabled] {
+    background-color: #4a4a4a;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none; /* Remove hover effect when disabled */
 }
 
-a:hover {
-    color: var(--dark-blue);
-}
-
-/* For smaller screens */
+/* Responsive Adjustments */
 @media (max-width: 600px) {
     .container {
-        width: 95%;
         padding: 20px;
-    }
-
-    h1 {
-        font-size: 24px;
-    }
-
-    h2 {
-        font-size: 22px;
-    }
-
-    .timer-display {
-        font-size: 2.5em;
+        width: 95%;
     }
 
     .btn {
-        font-size: 16px;
-        padding: 10px 15px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .header-section {
+        flex-direction: column;
+        align-items: flex-end; /* Align items to the right */
+        text-align: right;
+    }
+
+    .header-section h2 {
+        margin-bottom: 15px;
+        width: 100%; /* Take full width */
+    }
+
+    .user-stats {
+        width: 100%;
+        justify-content: flex-end; /* Align stats to the right */
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+    
+    .header-section button {
+        width: 100%; /* Make button full width */
+        margin-right: 0;
+    }
+
+    .timer-display {
+        font-size: 2em;
+    }
+
+    .exercise-item {
+        flex-direction: column;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .exercise-item span {
+        margin-bottom: 8px;
+        text-align: right;
+        width: 100%;
+    }
+
+    .exercise-item .btn {
+        width: 100%;
     }
 }
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Apply animations to elements */
+.container {
+    animation: fadeIn 0.8s ease-out;
+}
+
+.exercise-item {
+    animation: slideInFromRight 0.5s ease-out forwards;
+    opacity: 0; /* Start hidden for animation */
+}
+
+/* Stagger animation for list items */
+.exercises-section ul li:nth-child(1) { animation-delay: 0.1s; }
+.exercises-section ul li:nth-child(2) { animation-delay: 0.2s; }
+.exercises-section ul li:nth-child(3) { animation-delay: 0.3s; }
+/* Add more as needed or use JavaScript for dynamic stagger */

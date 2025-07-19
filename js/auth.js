@@ -1,3 +1,5 @@
+// js/auth.js
+
 import { Storage } from './storage.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (name && !isNaN(age) && !isNaN(height) && !isNaN(weight) && bloodType) {
                 Storage.registerUser(name, age, height, weight, bloodType);
                 alert('تم التسجيل بنجاح! مرحباً بك في System SSS.');
-                // **التعديل الجديد: التوجيه مباشرة إلى لوحة التحكم بعد التسجيل**
+                // التوجيه مباشرة إلى لوحة التحكم بعد التسجيل
                 window.location.href = 'dashboard.html';
             } else {
                 alert('الرجاء ملء جميع الحقول بشكل صحيح.');

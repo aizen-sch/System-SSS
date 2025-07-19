@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="system-background">
-    <div class="container auth-container">
-        <h2>انضم إلى System SSS</h2>
+    <div class="container">
+        <h1>التسجيل</h1>
         <form id="registrationForm">
             <div class="form-group">
                 <label for="name">الاسم:</label>
@@ -28,9 +28,19 @@
             </div>
             <div class="form-group">
                 <label for="bloodType">فصيلة الدم:</label>
-                <input type="text" id="bloodType" required>
+                <select id="bloodType" required>
+                    <option value="">اختر فصيلة الدم</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
             </div>
-            <button type="submit" class="btn primary-btn">تسجيل الدخول</button>
+            <button type="submit" class="btn primary-btn">تسجيل</button>
         </form>
     </div>
 

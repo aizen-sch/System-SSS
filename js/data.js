@@ -1,86 +1,72 @@
 // js/data.js
 
-export const RANKS = [
-    "E", "D", "C", "B", "A", "S", "SS", "SSS", "GODS"
-];
-
-export const EXERCISES_BY_RANK = {
-    "E": {
-        pushups: 30,
-        runMinutes: 15,
-        jumps: 50,
-        situps: 100,
-        points: 60
-    },
-    "D": {
-        pushups: 40,
-        runMinutes: 20,
-        jumps: 65,
-        situps: 110,
-        points: 60
-    },
-    "C": {
-        pushups: 45,
-        runMinutes: 22,
-        jumps: 70,
-        situps: 120,
-        points: 85
-    },
-    "B": {
-        pushups: 45,
-        runMinutes: 25,
-        jumps: 75,
-        situps: 125,
-        points: 90
-    },
-    "A": {
-        pushups: 50,
-        runMinutes: 30,
-        jumps: 85,
-        situps: 140,
-        points: 105
-    },
-    "S": {
-        pushups: 70,
-        runMinutes: 60,
-        jumps: 100,
-        situps: 250,
-        points: 80
-    },
-    "SS": {
-        pushups: 100,
-        runMinutes: 60,
-        jumps: 200,
-        situps: 300,
-        points: 100
-    },
-    "SSS": {
-        pushups: 150,
-        runMinutes: 90,
-        jumps: 250,
-        situps: 300,
-        points: 100
-    },
-    "GODS": {
-        pushups: 250,
-        runMinutes: 90,
-        jumps: 500,
-        situps: 500,
-        points: 100
-    }
-};
+// تعريف الرتب ونقاط الترقية
+export const RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
 
 export const RANK_UP_POINTS = {
-    "E": { min: 0, max: 419, nextRank: "D" },
-    "D": { min: 420, max: 1014, nextRank: "C" },
-    "C": { min: 1015, max: 1749, nextRank: "B" },
-    "B": { min: 1750, max: 2379, nextRank: "A" },
-    "A": { min: 2380, max: 3114, nextRank: "S" },
-    "S": { min: 3115, max: 3999, nextRank: "SS" },
-    "SS": { min: 4000, max: 6999, nextRank: "SSS" },
-    "SSS": { min: 7000, max: 19999, nextRank: "GODS" },
-    "GODS": { min: 20000, max: Infinity, nextRank: null } // GODS هو المستوى الأخير
+    'D': 100,
+    'C': 300,
+    'B': 600,
+    'A': 1000,
+    'S': 1500
 };
 
-export const PENALTY_RATIO_POINTS = 1/5; // نسبة خصم النقاط
-export const PENALTY_RATIO_EXERCISE = 1/3; // نسبة زيادة التمارين
+// نسبة خصم النقاط عند عدم إكمال المهام
+export const PENALTY_RATIO_POINTS = 0.15; // خصم 15% من النقاط
+
+// تعريف التمارين لكل رتبة
+export const EXERCISES_BY_RANK = {
+    'E': {
+        points: 10, // النقاط التي يحصل عليها عند إكمال مهام هذه الرتبة
+        exercises: [
+            { key: 'pushups', name: 'تمرين الضغط', baseValue: 10, unit: 'عدة' },
+            { key: 'run', name: 'جري', baseValue: 10, unit: 'دقيقة' },
+            { key: 'jumps', name: 'قفز', baseValue: 20, unit: 'عدة' }
+        ]
+    },
+    'D': {
+        points: 15,
+        exercises: [
+            { key: 'pushups', name: 'تمرين الضغط', baseValue: 15, unit: 'عدة' },
+            { key: 'run', name: 'جري', baseValue: 15, unit: 'دقيقة' },
+            { key: 'jumps', name: 'قفز', baseValue: 30, unit: 'عدة' },
+            { key: 'situps', name: 'تمرين البطن', baseValue: 10, unit: 'عدة' }
+        ]
+    },
+    'C': {
+        points: 20,
+        exercises: [
+            { key: 'pushups', name: 'تمرين الضغط', baseValue: 20, unit: 'عدة' },
+            { key: 'run', name: 'جري', baseValue: 20, unit: 'دقيقة' },
+            { key: 'jumps', name: 'قفز', baseValue: 40, unit: 'عدة' },
+            { key: 'situps', name: 'تمرين البطن', baseValue: 15, unit: 'عدة' }
+        ]
+    },
+    'B': {
+        points: 25,
+        exercises: [
+            { key: 'pushups', name: 'تمرين الضغط', baseValue: 25, unit: 'عدة' },
+            { key: 'run', name: 'جري', baseValue: 25, unit: 'دقيقة' },
+            { key: 'jumps', name: 'قفز', baseValue: 50, unit: 'عدة' },
+            { key: 'situps', name: 'تمرين البطن', baseValue: 20, unit: 'عدة' }
+        ]
+    },
+    'A': {
+        points: 30,
+        exercises: [
+            { key: 'pushups', name: 'تمرين الضغط', baseValue: 30, unit: 'عدة' },
+            { key: 'run', name: 'جري', baseValue: 30, unit: 'دقيقة' },
+            { key: 'jumps', name: 'قفز', baseValue: 60, unit: 'عدة' },
+            { key: 'situps', name: 'تمرين البطن', baseValue: 25, unit: 'عدة' }
+        ]
+    },
+    'S': {
+        points: 40,
+        exercises: [
+            { key: 'pushups', name: 'تمرين الضغط', baseValue: 40, unit: 'عدة' },
+            { key: 'run', name: 'جري', baseValue: 40, unit: 'دقيقة' },
+            { key: 'jumps', name: 'قفز', baseValue: 70, unit: 'عدة' },
+            { key: 'situps', name: 'تمرين البطن', baseValue: 30, unit: 'عدة' }
+        ]
+    }
+};

@@ -2,7 +2,6 @@
 
 import { Storage } from './storage.js';
 import { EXERCISES_BY_RANK, RANKS, RANK_UP_POINTS, PENALTY_RATIO_POINTS } from './data.js';
-// تأكد أن startTimer و stopTimer مستوردتان هنا
 import { updateDashboardHeader, updateDailyExercisesDisplay, displayUserInfo, startTimer, stopTimer } from './ui.js';
 
 let dailyTimerInterval; // لتخزين معرف العداد
@@ -15,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Storage.isUserRegistered()) {
             window.location.href = 'registration.html';
         } else {
-            // **التعديل الجديد: إذا كان المستخدم مسجلاً، ادخله مباشرة إلى لوحة التحكم**
+            // إذا كان المستخدم مسجلاً، ادخله مباشرة إلى لوحة التحكم
             window.location.href = 'dashboard.html';
         }
     } else if (path.endsWith('/registration.html')) {
@@ -74,21 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // **تمت إزالة جزء التعامل مع زر "تسجيل خروج" من هنا**
-        /*
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                if (confirm('هل أنت متأكد أنك تريد تسجيل الخروج وإعادة تعيين جميع بياناتك؟ لا يمكن التراجع عن هذا الإجراء.')) {
-                    Storage.resetAllData();
-                    alert('تمت إعادة تعيين جميع البيانات بنجاح. سيتم توجيهك إلى صفحة التسجيل.');
-                    window.location.href = 'registration.html';
-                }
-            });
-        }
-        */
-
-        // ربط زر "أكملت جميع المهام لهذا اليوم!" (لن يظهر أو يتم تفعيله إلا بعد إكمال الكل)
+        // زر "أكملت جميع المهام لهذا اليوم!" (لن يظهر أو يتم تفعيله إلا بعد إكمال الكل)
         const completeAllBtn = document.getElementById('completeAllBtn');
         if (completeAllBtn) {
              // زر إكمال الكل لا يفعل شيء بنفسه الآن، فهو فقط مؤشر مرئي
@@ -277,6 +262,7 @@ function checkDailyResetNeeded() {
 
         // دائماً قم بتحديث تاريخ آخر إعادة تعيين وحالة التمارين لليوم الجديد
         Storage.saveLastDailyResetDate(now);
+        // إعادة تعيين التمارين لليوم الجديد (كلها false)
         Storage.resetDailyExerciseStatus();
 
         // تحديث الواجهة بعد أي تغييرات (مثل خصم النقاط)
@@ -318,7 +304,7 @@ function applyPenalty(rank, currentPoints, currentAdjustments) {
 
     const newAdjustments = { ...currentAdjustments }; // نسخ التعديلات الحالية
     
-    // زيادة صعوبة التمارين بنسبة مئوية (مثلاً 10%)
+    // زيادة صعوبة الت تمارين بنسبة مئوية (مثلاً 10%)
     const penaltyIncreaseRatio = 0.10; // زيادة 10%
 
     // زيادة صعوبة تمارين معينة بناءً على الرتبة

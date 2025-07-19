@@ -24,7 +24,7 @@ export const Storage = {
         localStorage.setItem('systemSSS_userPoints', '0'); // النقاط الأولية
         localStorage.setItem('systemSSS_lastDailyResetDate', Date.now().toString()); // تاريخ آخر إعادة تعيين لليوم
         // استدعاء resetDailyExerciseStatus لتهيئة التمارين بشكل صحيح للمستخدم الجديد
-        this.resetDailyExerciseStatus();
+        this.resetDailyExerciseStatus(); // <--- استخدام this.resetDailyExerciseStatus
         localStorage.setItem('systemSSS_consecutiveDaysCompleted', '0'); // الأيام المتتالية المكتملة
         localStorage.setItem('systemSSS_dailyExerciseAdjustments', JSON.stringify({ pushups: 0, runMinutes: 0, jumps: 0, situps: 0 })); // تعديلات التمارين (للعقوبات)
     },
@@ -108,8 +108,6 @@ export const Storage = {
      */
     getDailyExerciseStatus: function() {
         const status = localStorage.getItem('systemSSS_dailyExerciseStatus');
-        // إذا لم يتم العثور على حالة، قم بتهيئتها ككائن فارغ
-        // وسيتم ملؤها بواسطة resetDailyExerciseStatus لاحقًا
         return status ? JSON.parse(status) : {};
     },
 
