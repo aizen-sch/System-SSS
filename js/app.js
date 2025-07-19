@@ -1,212 +1,117 @@
-// js/app.js
-
 import { Storage } from './storage.js';
-import { EXERCISES_BY_RANK, RANK_UP_POINTS, RANKS, PENALTY_RATIO_POINTS, PENALTY_RATIO_EXERCISE } from './data.js';
-import { updateDashboardHeader, updateDailyExercisesDisplay, updateTimerDisplay, displayUserInfo } from './ui.js';
+import { EXERCISES_BY_RANK, RANKS, RANK_UP_POINTS, PENALTY_RATIO_POINTS } from './data.js';
+import { updateDashboardHeader, updateDailyExercisesDisplay, displayUserInfo, startTimer, stopTimer } from './ui.js';
 
-let countdownInterval; // متغير للاحتفاظ بمعرف العداد
+let dailyTimerInterval; // لتخزين معرف العداد
 
-// ------------------------------------------------------------------
-// وظائف مساعدة عامة
-// ------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
 
-/**
- * تحقق مما إذا كان التاريخ هو نفس اليوم (فقط اليوم/الشهر/السنة)
- * @param {number} timestamp1
- * @param {number} timestamp2
- * @returns {boolean}
- */
-function isSameDay(timestamp1, timestamp2) {
-    const date1 = new Date(timestamp1);
-    const date2 = new Date(timestamp2);
-    return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate();
-}
-
-/**
- * الحصول على نهاية اليوم الحالي (timestamp)
- * @returns {number}
- */
-function getEndOfToday() {
-    const now = new Date();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    return endOfDay.getTime();
-}
-
-// ------------------------------------------------------------------
-// منطق التمارين والنقاط والرتب
-// ------------------------------------------------------------------
-
-/**
- * تحديث رتبة المستخدم بناءً على نقاطه
- */
-function checkAndUpgradeRank() {
-    let currentUserRank = Storage.getUserRank();
-    let currentUserPoints = Storage.getUserPoints();
-
-    let newRank = currentUserRank;
-
-    for (const rank of RANKS) {
-        const rankData = RANK_UP_POINTS[rank];
-        if (rankData && rankData.nextRank) {
-            if (currentUserPoints >= rankData.min && currentUserPoints <= rankData.max) {
-                newRank = rank;
-                break; // وجدنا الرتبة الصحيحة للنقاط الحالية
-            } else if (currentUserPoints > rankData.max) {
-                newRank = rankData.nextRank; // قد يكون مؤهلاً للرتبة التالية
-            }
-        } else if (rank === "GODS" && currentUserPoints >= RANK_UP_POINTS["GODS"].min) {
-            newRank = "GODS";
-            break;
-        }
-    }
-
-    if (newRank !== currentUserRank) {
-        Storage.saveUserRank(newRank);
-        alert(`تهانينا! لقد تمت ترقيتك إلى الرتبة: ${newRank}`);
-        updateDashboardHeader(); // تحديث الواجهة فوراً
-    }
-}
-
-/**
- * تطبيق عقوبة عدم إكمال التمارين
- * @param {string} currentRank
- * @param {number} userPoints
- * @param {object} adjustments
- * @returns {object} { newPoints, newAdjustments }
- */
-function applyPenalty(currentRank, userPoints, adjustments) {
-    let newPoints = userPoints;
-    let newAdjustments = { ...adjustments }; // نسخة لتجنب التعديل المباشر
-
-    // يتم إيقاف نظام العقوبات عند وصول الرتبة S
-    if (RANKS.indexOf(currentRank) >= RANKS.indexOf("S")) {
-        return { newPoints, newAdjustments };
-    }
-
-    // خصم النقاط
-    const pointsToDeduct = Math.floor(userPoints * PENALTY_RATIO_POINTS);
-    newPoints = Math.max(0, userPoints - pointsToDeduct); // لا يمكن أن تكون النقاط أقل من 0
-
-    // إضافة 1/3 إلى التمرين القادم
-    // هذه ستحتاج لمنطق أكثر تعقيداً لتحديد أي تمرين يتم زيادته
-    // حالياً، سأضيفها بشكل متساوٍ لجميع التمارين الممكنة كتعديل دائم حتى يتم إنجازها
-    // أو يمكن تحديدها لأول تمرين لم يتم إكماله. للتبسيط، سأفترض أنها تزيد كل التمارين بشكل عام.
-    // أو يمكننا اعتبارها زيادة مؤقتة لكل التمارين في اليوم التالي.
-    // لتبسيط هذا الجزء في البداية: سأفترض أنها زيادة على جميع التمارين *الحالية* للرتبة
-    // كعقوبة تجعل التمارين التالية أصعب، وتظل حتى يتم تجاوزها.
-    // هذه النقطة تتطلب توضيحاً إضافياً "اضافة 1/3 الى تمرينه قادم". هل هو تمرين واحد؟ هل هو تمرين معين؟
-    // لغرض التنفيذ الحالي، سأجعلها تزيد من صعوبة التمارين الحالية (للرتبة) بشكل دائم حتى تُكمل.
-    // هذا يعني أننا سنخزن هذه التعديلات ونضيفها إلى متطلبات التمارين.
-
-    const currentRankExercises = EXERCISES_BY_RANK[currentRank];
-    if (currentRankExercises) {
-        newAdjustments.pushups += Math.ceil(currentRankExercises.pushups * PENALTY_RATIO_EXERCISE);
-        newAdjustments.runMinutes += Math.ceil(currentRankExercises.runMinutes * PENALTY_RATIO_EXERCISE);
-        newAdjustments.jumps += Math.ceil(currentRankExercises.jumps * PENALTY_RATIO_EXERCISE);
-        newAdjustments.situps += Math.ceil(currentRankExercises.situps * PENALTY_RATIO_EXERCISE);
-    }
-
-    return { newPoints, newAdjustments };
-}
-
-
-/**
- * التحقق من إعادة تعيين التمارين اليومية وتطبيق العقوبات/المكافآت
- */
-function checkDailyResetNeeded() {
-    const lastResetTimestamp = Storage.getLastDailyResetDate();
-    const now = Date.now();
-    const endOfLastResetDay = new Date(lastResetTimestamp);
-    endOfLastResetDay.setHours(23, 59, 59, 999);
-
-    // إذا لم يكن اليوم هو نفس يوم آخر إعادة تعيين، فهذا يوم جديد
-    if (!isSameDay(lastResetTimestamp, now)) {
-        const dailyStatus = Storage.getDailyExerciseStatus();
-        const allExercisesDone = Object.values(dailyStatus).every(status => status === true);
-
-        let currentUserPoints = Storage.getUserPoints();
-        let currentUserRank = Storage.getUserRank();
-        let consecutiveDays = Storage.getConsecutiveDaysCompleted();
-        let currentAdjustments = Storage.getDailyExerciseAdjustments();
-
-        // إذا كانت التمارين لم تكتمل في اليوم السابق وتوجد عقوبات
-        if (!allExercisesDone) {
-            // تطبيق العقوبة فقط إذا كانت الرتبة أقل من S
-            if (RANKS.indexOf(currentUserRank) < RANKS.indexOf("S")) {
-                const { newPoints, newAdjustments } = applyPenalty(currentUserRank, currentUserPoints, currentAdjustments);
-                Storage.saveUserPoints(newPoints);
-                Storage.saveDailyExerciseAdjustments(newAdjustments);
-                alert(`لم تكمل مهام الأمس! تم خصم ${Math.floor(currentUserPoints * PENALTY_RATIO_POINTS)} نقطة. وزادت صعوبة بعض تمارينك.`);
-                consecutiveDays = 0; // إعادة تعيين الأيام المتتالية
-            }
+    // تهيئة الموقع عند التحميل
+    if (path.endsWith('/index.html') || path === '/') {
+        if (!Storage.isUserRegistered()) {
+            window.location.href = 'registration.html';
         } else {
-            // إذا كانت التمارين قد اكتملت في اليوم السابق
-            const rankPoints = EXERCISES_BY_RANK[currentUserRank].points;
-            Storage.saveUserPoints(currentUserPoints + rankPoints);
-            consecutiveDays++; // زيادة الأيام المتتالية
-            // إعادة تعيين التعديلات لأن المستخدم أكمل المهام
-            Storage.saveDailyExerciseAdjustments({ pushups: 0, runMinutes: 0, jumps: 0, situps: 0 });
+            // **التعديل الجديد: إذا كان المستخدم مسجلاً، ادخله مباشرة إلى لوحة التحكم**
+            window.location.href = 'dashboard.html';
+        }
+    } else if (path.endsWith('/registration.html')) {
+        const registrationForm = document.getElementById('registrationForm');
+        if (registrationForm) {
+            registrationForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const name = document.getElementById('name').value;
+                const age = parseInt(document.getElementById('age').value);
+                const height = parseFloat(document.getElementById('height').value);
+                const weight = parseFloat(document.getElementById('weight').value);
+                const bloodType = document.getElementById('bloodType').value;
+
+                if (name && !isNaN(age) && !isNaN(height) && !isNaN(weight) && bloodType) {
+                    Storage.registerUser(name, age, height, weight, bloodType);
+                    alert('تم التسجيل بنجاح! مرحباً بك في System SSS.');
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert('الرجاء ملء جميع الحقول بشكل صحيح.');
+                }
+            });
+        }
+    } else if (path.endsWith('/dashboard.html')) {
+        if (!Storage.isUserRegistered()) {
+            window.location.href = 'registration.html';
+            return; // توقف عن تنفيذ بقية الكود إذا لم يكن مسجلاً
         }
 
-        Storage.saveConsecutiveDaysCompleted(consecutiveDays);
-        Storage.saveLastDailyResetDate(now); // تحديث تاريخ آخر إعادة تعيين لليوم الحالي
-        Storage.resetDailyExerciseStatus(); // إعادة تعيين حالة التمارين لليوم الجديد
+        // تحقق من إعادة تعيين اليومي عند تحميل لوحة التحكم
+        checkDailyResetNeeded();
+        
+        // تحديث الواجهة عند تحميل لوحة التحكم
+        updateDashboardHeader();
+        const userRank = Storage.getUserRank();
+        const dailyStatus = Storage.getDailyExerciseStatus();
+        const adjustments = Storage.getDailyExerciseAdjustments();
+        updateDailyExercisesDisplay(userRank, dailyStatus, adjustments);
 
-        // التحقق من الترقية بناءً على الأيام المتتالية إذا لم يكن قد تم بالفعل بالنقاط
-        if (consecutiveDays >= 7) {
-            const currentRankIndex = RANKS.indexOf(currentUserRank);
-            if (currentRankIndex < RANKS.length - 1) { // ليس الرتبة الأخيرة
-                const nextRank = RANKS[currentRankIndex + 1];
-                Storage.saveUserRank(nextRank);
-                alert(`تهانينا! لقد أكملت 7 أيام متتالية وتمت ترقيتك إلى الرتبة: ${nextRank}!`);
-                Storage.saveConsecutiveDaysCompleted(0); // إعادة تعيين بعد الترقية بالأيام
+        // بدء العداد اليومي
+        startDailyTimer();
+
+        // ربط أزرار إكمال التمارين
+        document.addEventListener('click', (event) => {
+            if (event.target.classList.contains('complete-btn')) {
+                const exerciseKey = event.target.dataset.exerciseKey;
+                completeExercise(exerciseKey);
             }
+        });
+
+        // ربط زر "معلوماتي"
+        const viewInfoBtn = document.getElementById('viewInfoBtn');
+        if (viewInfoBtn) {
+            viewInfoBtn.addEventListener('click', () => {
+                window.location.href = 'user_info.html';
+            });
         }
 
-        // تحقق من الترقية بناءً على النقاط بعد تحديثها
-        checkAndUpgradeRank();
-    }
-}
-
-/**
- * بدء العداد التنازلي لليوم الحالي
- */
-function startDailyTimer() {
-    // إيقاف أي عداد سابق لتجنب التكرار
-    if (countdownInterval) {
-        clearInterval(countdownInterval);
-    }
-
-    const updateTimer = () => {
-        const now = Date.now();
-        const endOfToday = getEndOfToday();
-        let remainingMillis = endOfToday - now;
-
-        updateTimerDisplay(remainingMillis);
-
-        if (remainingMillis <= 0) {
-            clearInterval(countdownInterval);
-            // بمجرد انتهاء العداد، نتحقق من إعادة التعيين لليوم الجديد
-            checkDailyResetNeeded();
-            // قد تحتاج إلى إعادة تحميل الصفحة أو تحديث شامل لواجهة المستخدم هنا
-            // window.location.reload(); // خيار لإعادة تحميل كاملة
-            // أو فقط تحديث الواجهة
-            const userRank = Storage.getUserRank();
-            const dailyStatus = Storage.getDailyExerciseStatus();
-            const adjustments = Storage.getDailyExerciseAdjustments();
-            updateDailyExercisesDisplay(userRank, dailyStatus, adjustments);
-            updateDashboardHeader();
+        // **تمت إزالة جزء التعامل مع زر "تسجيل خروج" من هنا**
+        /*
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (confirm('هل أنت متأكد أنك تريد تسجيل الخروج وإعادة تعيين جميع بياناتك؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                    Storage.resetAllData();
+                    alert('تمت إعادة تعيين جميع البيانات بنجاح. سيتم توجيهك إلى صفحة التسجيل.');
+                    window.location.href = 'registration.html';
+                }
+            });
         }
-    };
+        */
 
-    updateTimer(); // تحديث فوري عند البدء
-    countdownInterval = setInterval(updateTimer, 1000); // تحديث كل ثانية
-}
+        // ربط زر "أكملت جميع المهام لهذا اليوم!" (لن يظهر أو يتم تفعيله إلا بعد إكمال الكل)
+        const completeAllBtn = document.getElementById('completeAllBtn');
+        if (completeAllBtn) {
+             // زر إكمال الكل لا يفعل شيء بنفسه الآن، فهو فقط مؤشر مرئي
+             // النقاط يتم إضافتها في completeExercise()
+        }
+
+    } else if (path.endsWith('/user_info.html')) {
+        if (!Storage.isUserRegistered()) {
+            window.location.href = 'registration.html';
+            return;
+        }
+        displayUserInfo(); // عرض معلومات المستخدم
+
+        const backBtn = document.getElementById('backBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+        }
+    }
+});
+
 
 /**
- * التعامل مع إكمال تمرين واحد
+ * التعامل مع إكمال تمرين واحد.
+ * هذا هو المكان الذي تتم فيه إضافة النقاط فورًا بعد إكمال جميع التمارين.
  * @param {string} exerciseKey
  */
 function completeExercise(exerciseKey) {
@@ -230,74 +135,203 @@ function completeExercise(exerciseKey) {
     if (allExercisesDone) {
         const completeAllBtn = document.getElementById('completeAllBtn');
         if (completeAllBtn) {
-            completeAllBtn.style.display = 'block';
-            completeAllBtn.disabled = true;
-            completeAllBtn.classList.add('disabled');
+            completeAllBtn.style.display = 'block'; // إظهار الزر
+            completeAllBtn.disabled = true; // تعطيل الزر
+            completeAllBtn.classList.add('disabled'); // إضافة كلاس لجعله يبدو معطلاً
         }
-        // يمكننا هنا عرض رسالة تهنئة صغيرة بأنهم أكملوا جميع مهام اليوم
-        alert('تهانينا! لقد أكملت جميع مهام اليوم. ستُضاف نقاطك عند بداية اليوم الجديد.');
+
+        // ****** منطق إضافة النقاط فوراً يبدأ هنا ******
+        let currentUserPoints = Storage.getUserPoints();
+        const currentRank = Storage.getUserRank();
+        const rankPoints = EXERCISES_BY_RANK[currentRank].points; // النقاط المستحقة لهذه الرتبة
+
+        Storage.saveUserPoints(currentUserPoints + rankPoints); // إضافة النقاط وحفظها
+
+        // إعادة تعيين تعديلات العقوبات فوراً بعد إكمال المهام
+        Storage.saveDailyExerciseAdjustments({ pushups: 0, runMinutes: 0, jumps: 0, situps: 0 });
+
+        // زيادة الأيام المتتالية المكتملة
+        let consecutiveDays = Storage.getConsecutiveDaysCompleted();
+        consecutiveDays++;
+        Storage.saveConsecutiveDaysCompleted(consecutiveDays);
+
+        // تحديث الواجهة لعرض النقاط والرتبة الجديدة فوراً
+        updateDashboardHeader();
+        
+        // التحقق من الترقية بناءً على الأيام المتتالية المكتملة (إذا كان مؤهلاً)
+        if (consecutiveDays >= 7) {
+            const currentRankIndex = RANKS.indexOf(currentRank);
+            if (currentRankIndex < RANKS.length - 1) { // التأكد أنها ليست الرتبة الأخيرة
+                const nextRank = RANKS[currentRankIndex + 1];
+                Storage.saveUserRank(nextRank);
+                alert(`تهانينا! لقد أكملت 7 أيام متتالية وتمت ترقيتك إلى الرتبة: ${nextRank}!`);
+                Storage.saveConsecutiveDaysCompleted(0); // إعادة تعيين الأيام المتتالية بعد الترقية
+            }
+        }
+        
+        // التحقق من الترقية بناءً على النقاط (بعد تحديثها)
+        checkAndUpgradeRank();
+
+        // رسالة تأكيد للمستخدم
+        alert(`تهانينا! لقد أكملت جميع مهام اليوم وحصلت على ${rankPoints} نقطة!`);
+        // ****** منطق إضافة النقاط ينتهي هنا ******
     }
 }
 
-// ------------------------------------------------------------------
-// إعداد الأحداث عند تحميل كل صفحة
-// ------------------------------------------------------------------
+/**
+ * دالة للتحقق من الترقية بناءً على النقاط.
+ * يتم استدعاؤها بعد أي تغيير في النقاط أو عند تحميل لوحة التحكم.
+ */
+function checkAndUpgradeRank() {
+    let currentUserPoints = Storage.getUserPoints();
+    let currentUserRank = Storage.getUserRank();
+    const currentRankIndex = RANKS.indexOf(currentUserRank);
 
-document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-
-    // ... (الجزء الخاص بـ index.html و registration.html) ...
-
-    if (path.endsWith('/dashboard.html')) {
-        // **هام: التحقق من التسجيل**
-        if (!Storage.isUserRegistered()) {
-            window.location.href = 'registration.html';
-            return; // توقف عن تنفيذ بقية الكود إذا لم يكن مسجلاً
+    // تحقق من الترقية بناءً على النقاط
+    if (currentRankIndex < RANKS.length - 1) { // التأكد أنها ليست الرتبة الأخيرة
+        const nextRankPointsRequired = RANK_UP_POINTS[RANKS[currentRankIndex + 1]];
+        if (currentUserPoints >= nextRankPointsRequired) {
+            const nextRank = RANKS[currentRankIndex + 1];
+            Storage.saveUserRank(nextRank);
+            alert(`مبروك! وصلت نقاطك إلى ${currentUserPoints} وتمت ترقيتك إلى الرتبة: ${nextRank}!`);
+            // بعد الترقية، قد نحتاج لتحديث العرض
+            updateDashboardHeader();
+            // بما أن الرتبة تغيرت، قد تتغير التمارين
+            const dailyStatus = Storage.getDailyExerciseStatus(); // يتم إعادة تعيينها في checkDailyResetNeeded
+            const adjustments = Storage.getDailyExerciseAdjustments();
+            updateDailyExercisesDisplay(nextRank, dailyStatus, adjustments);
         }
-
-        // عند تحميل لوحة التحكم
-        checkDailyResetNeeded(); // تحقق من إعادة التعيين أولاً
-        updateDashboardHeader(); // تحديث معلومات الرأس (الاسم، الرتبة، النقاط)
-        
-        const userRank = Storage.getUserRank();
-        const dailyStatus = Storage.getDailyExerciseStatus();
-        const adjustments = Storage.getDailyExerciseAdjustments();
-        updateDailyExercisesDisplay(userRank, dailyStatus, adjustments); // عرض التمارين
-
-        startDailyTimer() // بدء العداد
-
-        // إضافة مستمعي الأحداث للأزرار
-        document.getElementById('viewInfoBtn').addEventListener('click', () => {
-            window.location.href = 'user_info.html';
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            if (confirm('هل أنت متأكد من أنك تريد تسجيل الخروج ومسح جميع بياناتك؟')) {
-                Storage.clearAllUserData();
-                clearInterval(countdownInterval); // إيقاف العداد عند تسجيل الخروج
-                window.location.href = 'registration.html';
-            }
-        });
-
-        // إضافة مستمعي الأحداث لأزرار إكمال التمارين
-        document.getElementById('dailyExercisesList').addEventListener('click', (event) => {
-            if (event.target.tagName === 'BUTTON' && !event.target.disabled) {
-                const exerciseKey = event.target.dataset.exerciseKey;
-                completeExercise(exerciseKey);
-            }
-        });
-
-        // زر إكمال جميع المهام (لا يحتاج لحدث الآن لأنه سيصبح معطلاً ومخفياً)
-        // المنطق يدار تلقائياً عند إكمال آخر تمرين
-    } else if (path.endsWith('/user_info.html')) {
-        // إذا لم يكن المستخدم مسجلاً، أعد توجيهه لصفحة التسجيل
-        if (!Storage.isUserRegistered()) {
-            window.location.href = 'registration.html';
-            return;
-        }
-        displayUserInfo(); // عرض معلومات المستخدم
-        document.getElementById('backBtn').addEventListener('click', () => {
-            window.location.href = 'dashboard.html';
-        });
     }
-});
+}
+
+
+/**
+ * دالة لبدء العداد اليومي.
+ */
+function startDailyTimer() {
+    stopTimer(dailyTimerInterval); // أوقف أي عداد سابق
+    
+    const lastResetTimestamp = Storage.getLastDailyResetDate();
+    const now = Date.now();
+
+    // احسب بداية اليوم الحالي (منتصف الليل)
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    // احسب نهاية اليوم الحالي (نهاية منتصف الليل التالي)
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+    const timeRemaining = tomorrowStart.getTime() - now; // الوقت المتبقي بالمللي ثانية
+
+    if (timeRemaining > 0) {
+        // ابدأ العداد باستخدام دالة startTimer من UI
+        dailyTimerInterval = startTimer('countdownTimer', timeRemaining, () => {
+            // هذا الكولباك يتم تشغيله عندما ينتهي العداد (أي في منتصف الليل)
+            checkDailyResetNeeded(); // نفذ إعادة التعيين لليوم الجديد
+            startDailyTimer(); // أعد تشغيل العداد لليوم الجديد
+        });
+    } else {
+        // إذا كان الوقت المتبقي سالبًا أو صفرًا، فهذا يعني أننا تجاوزنا منتصف الليل
+        // يجب أن يتم إعادة التعيين فوراً ثم بدء العداد لليوم الجديد
+        checkDailyResetNeeded();
+        startDailyTimer();
+    }
+}
+
+/**
+ * التحقق من إعادة تعيين التمارين اليومية وتطبيق العقوبات/المكافآت.
+ * ملاحظة: الآن يتم إضافة النقاط وزيادة الأيام المتتالية في completeExercise().
+ * هذه الدالة ستركز فقط على إعادة تعيين حالة التمارين وتطبيق العقوبات.
+ */
+function checkDailyResetNeeded() {
+    const lastResetTimestamp = Storage.getLastDailyResetDate();
+    const now = Date.now();
+    
+    // إذا لم يكن اليوم هو نفس يوم آخر إعادة تعيين، فهذا يوم جديد
+    if (!isSameDay(lastResetTimestamp, now)) {
+        const dailyStatus = Storage.getDailyExerciseStatus();
+        const allExercisesDone = Object.values(dailyStatus).every(status => status === true);
+
+        let currentUserPoints = Storage.getUserPoints(); 
+        let currentUserRank = Storage.getUserRank();
+        let consecutiveDays = Storage.getConsecutiveDaysCompleted(); 
+        let currentAdjustments = Storage.getDailyExerciseAdjustments(); 
+
+        // إذا كانت التمارين لم تكتمل في اليوم السابق، طبق العقوبة
+        if (!allExercisesDone) {
+            // تطبيق العقوبة فقط إذا كانت الرتبة أقل من S
+            if (RANKS.indexOf(currentUserRank) < RANKS.indexOf("S")) {
+                const { newPoints, newAdjustments } = applyPenalty(currentUserRank, currentUserPoints, currentAdjustments);
+                Storage.saveUserPoints(newPoints); // حفظ النقاط بعد الخصم
+                Storage.saveDailyExerciseAdjustments(newAdjustments); // حفظ تعديلات العقوبات
+                alert(`لم تكمل مهام الأمس! تم خصم ${Math.floor(currentUserPoints - newPoints)} نقطة. وزادت صعوبة بعض تمارينك.`);
+                consecutiveDays = 0; // إعادة تعيين الأيام المتتالية عند عدم الإكمال
+                Storage.saveConsecutiveDaysCompleted(consecutiveDays); // حفظ تحديث الأيام المتتالية
+            }
+        } 
+        // لا توجد كتلة `else` لإضافة النقاط هنا بعد الآن، لأنها تتم في `completeExercise()`
+
+        // دائماً قم بتحديث تاريخ آخر إعادة تعيين وحالة التمارين لليوم الجديد
+        Storage.saveLastDailyResetDate(now);
+        Storage.resetDailyExerciseStatus();
+
+        // تحديث الواجهة بعد أي تغييرات (مثل خصم النقاط)
+        updateDashboardHeader();
+        const updatedRank = Storage.getUserRank();
+        const updatedStatus = Storage.getDailyExerciseStatus();
+        const updatedAdjustments = Storage.getDailyExerciseAdjustments();
+        updateDailyExercisesDisplay(updatedRank, updatedStatus, updatedAdjustments);
+
+        // التحقق من الترقية بعد خصم النقاط (إذا تم)
+        checkAndUpgradeRank();
+    }
+}
+
+/**
+ * دالة مساعدة لتحديد ما إذا كان التاريخان يقعان في نفس اليوم.
+ * @param {number} timestamp1
+ * @param {number} timestamp2
+ * @returns {boolean}
+ */
+function isSameDay(timestamp1, timestamp2) {
+    const date1 = new Date(timestamp1);
+    const date2 = new Date(timestamp2);
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+}
+
+/**
+ * دالة لتطبيق العقوبة (خصم نقاط وزيادة صعوبة التمارين)
+ * @param {string} rank - الرتبة الحالية للمستخدم
+ * @param {number} currentPoints - نقاط المستخدم الحالية
+ * @param {object} currentAdjustments - التعديلات الحالية على التمارين
+ * @returns {{newPoints: number, newAdjustments: object}} - النقاط والتعديلات الجديدة
+ */
+function applyPenalty(rank, currentPoints, currentAdjustments) {
+    const penaltyAmount = Math.floor(currentPoints * PENALTY_RATIO_POINTS);
+    const newPoints = Math.max(0, currentPoints - penaltyAmount); // لا يمكن أن تكون النقاط أقل من صفر
+
+    const newAdjustments = { ...currentAdjustments }; // نسخ التعديلات الحالية
+    
+    // زيادة صعوبة التمارين بنسبة مئوية (مثلاً 10%)
+    const penaltyIncreaseRatio = 0.10; // زيادة 10%
+
+    // زيادة صعوبة تمارين معينة بناءً على الرتبة
+    const exercisesForRank = EXERCISES_BY_RANK[rank].exercises;
+    exercisesForRank.forEach(ex => {
+        if (ex.key === 'pushups') {
+            newAdjustments.pushups = (newAdjustments.pushups || 0) + Math.ceil(ex.baseValue * penaltyIncreaseRatio);
+        } else if (ex.key === 'run') {
+            newAdjustments.runMinutes = (newAdjustments.runMinutes || 0) + Math.ceil(ex.baseValue * penaltyIncreaseRatio);
+        } else if (ex.key === 'jumps') {
+            newAdjustments.jumps = (newAdjustments.jumps || 0) + Math.ceil(ex.baseValue * penaltyIncreaseRatio);
+        } else if (ex.key === 'situps') {
+            newAdjustments.situps = (newAdjustments.situps || 0) + Math.ceil(ex.baseValue * penaltyIncreaseRatio);
+        }
+        // يمكن إضافة المزيد من التمارين هنا
+    });
+
+    return { newPoints, newAdjustments };
+}
