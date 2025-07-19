@@ -1,7 +1,7 @@
 // js/app.js
 
 import { Storage } from './storage.js';
-import { EXERCISES_BY_RANK, RANKS, RANK_UP_POINTS, PENALTY_RATIO_POINTS } from './data.js';
+import { EXERCISES_BY_RANK, RANKS, RANK_UP_POINTS, PENALTY_RATIO_POINTS, PENALTY_EXERCISE_INCREASE_RATIO } from './data.js';
 import { updateDashboardHeader, updateDailyExercisesDisplay, displayUserInfo, startTimer, stopTimer } from './ui.js';
 
 let dailyTimerInterval; // لتخزين معرف العداد
@@ -136,6 +136,7 @@ function completeExercise(exerciseKey) {
         Storage.saveUserPoints(currentUserPoints + rankPoints); // إضافة النقاط وحفظها
 
         // إعادة تعيين تعديلات العقوبات فوراً بعد إكمال المهام
+        // هذا يضمن أن العقوبات يتم مسحها لليوم التالي بعد إكمال مهام اليوم الحالي
         Storage.saveDailyExerciseAdjustments({ pushups: 0, runMinutes: 0, jumps: 0, situps: 0 });
 
         // زيادة الأيام المتتالية المكتملة
@@ -147,14 +148,17 @@ function completeExercise(exerciseKey) {
         updateDashboardHeader();
         
         // التحقق من الترقية بناءً على الأيام المتتالية المكتملة (إذا كان مؤهلاً)
-        if (consecutiveDays >= 7) {
-            const currentRankIndex = RANKS.indexOf(currentRank);
-            if (currentRankIndex < RANKS.length - 1) { // التأكد أنها ليست الرتبة الأخيرة
-                const nextRank = RANKS[currentRankIndex + 1];
-                Storage.saveUserRank(nextRank);
-                alert(`تهانينا! لقد أكملت 7 أيام متتالية وتمت ترقيتك إلى الرتبة: ${nextRank}!`);
-                Storage.saveConsecutiveDaysCompleted(0); // إعادة تعيين الأيام المتتالية بعد الترقية
-            }
+        // هذا الشرط للترقية فقط إذا لم يكن قد وصل لرتبة S أو أعلى
+        const currentRankIndex = RANKS.indexOf(currentRank);
+        const sRankIndex = RANKS.indexOf('S');
+
+        if (consecutiveDays >= 7 && currentRankIndex < RANKS.length -1 && currentRankIndex < sRankIndex) { 
+            const nextRank = RANKS[currentRankIndex + 1];
+            Storage.saveUserRank(nextRank);
+            alert(`تهانينا! لقد أكملت 7 أيام متتالية وتمت ترقيتك إلى الرتبة: ${nextRank}!`);
+            Storage.saveConsecutiveDaysCompleted(0); // إعادة تعيين الأيام المتتالية بعد الترقية
+            // بعد الترقية، يجب أن تتغير التمارين لليوم التالي
+            // سيتم التعامل مع هذا في checkDailyResetNeeded
         }
         
         // التحقق من الترقية بناءً على النقاط (بعد تحديثها)
@@ -176,18 +180,35 @@ function checkAndUpgradeRank() {
     const currentRankIndex = RANKS.indexOf(currentUserRank);
 
     // تحقق من الترقية بناءً على النقاط
-    if (currentRankIndex < RANKS.length - 1) { // التأكد أنها ليست الرتبة الأخيرة
-        const nextRankPointsRequired = RANK_UP_POINTS[RANKS[currentRankIndex + 1]];
-        if (currentUserPoints >= nextRankPointsRequired) {
-            const nextRank = RANKS[currentRankIndex + 1];
+    // نمر على الرتب من الرتبة الحالية صعوداً
+    for (let i = currentRankIndex + 1; i < RANKS.length; i++) {
+        const nextRank = RANKS[i];
+        const pointsRequiredForNextRank = RANK_UP_POINTS[nextRank];
+
+        // بالنسبة لرتبة GODS، لا يوجد ترقية أعلى منها، فقط استمرار جمع النقاط
+        if (nextRank === 'GODS') {
+            if (currentUserPoints >= pointsRequiredForNextRank && currentUserRank !== 'GODS') {
+                Storage.saveUserRank(nextRank);
+                alert(`مبروك! وصلت نقاطك إلى ${currentUserPoints} وتمت ترقيتك إلى الرتبة الأسطورية: GODS!`);
+                updateDashboardHeader();
+                // لا نحتاج لتغيير التمارين هنا، لأنها ستتغير مع الرتبة الجديدة
+                // وسيتم التعامل مع التمارين لليوم التالي في checkDailyResetNeeded
+                return; // توقف بعد الترقية النهائية
+            }
+            continue; // استمر في اللفة إذا لم يتم الترقية بعد
+        }
+
+        if (currentUserPoints >= pointsRequiredForNextRank && currentUserRank !== nextRank) {
             Storage.saveUserRank(nextRank);
             alert(`مبروك! وصلت نقاطك إلى ${currentUserPoints} وتمت ترقيتك إلى الرتبة: ${nextRank}!`);
-            // بعد الترقية، قد نحتاج لتحديث العرض
             updateDashboardHeader();
-            // بما أن الرتبة تغيرت، قد تتغير التمارين
-            const dailyStatus = Storage.getDailyExerciseStatus(); // يتم إعادة تعيينها في checkDailyResetNeeded
-            const adjustments = Storage.getDailyExerciseAdjustments();
-            updateDailyExercisesDisplay(nextRank, dailyStatus, adjustments);
+            // بعد الترقية، الرتبة قد تغيرت، مما يعني تمارين جديدة
+            // هذا سيؤثر على ما سيتم تحميله في اليوم الجديد
+            // سيتم التعامل مع التمارين لليوم التالي في checkDailyResetNeeded
+            currentUserRank = nextRank; // تحديث الرتبة المحلية للمتابعة في الحلقة
+        } else {
+            // إذا لم تكن النقاط كافية للرتبة التالية، فلا داعي للتحقق من الرتب الأعلى
+            break;
         }
     }
 }
@@ -229,8 +250,6 @@ function startDailyTimer() {
 
 /**
  * التحقق من إعادة تعيين التمارين اليومية وتطبيق العقوبات/المكافآت.
- * ملاحظة: الآن يتم إضافة النقاط وزيادة الأيام المتتالية في completeExercise().
- * هذه الدالة ستركز فقط على إعادة تعيين حالة التمارين وتطبيق العقوبات.
  */
 function checkDailyResetNeeded() {
     const lastResetTimestamp = Storage.getLastDailyResetDate();
@@ -245,34 +264,43 @@ function checkDailyResetNeeded() {
         let currentUserRank = Storage.getUserRank();
         let consecutiveDays = Storage.getConsecutiveDaysCompleted(); 
         let currentAdjustments = Storage.getDailyExerciseAdjustments(); 
+        
+        const sRankIndex = RANKS.indexOf('S');
+        const currentRankIndex = RANKS.indexOf(currentUserRank);
 
-        // إذا كانت التمارين لم تكتمل في اليوم السابق، طبق العقوبة
-        if (!allExercisesDone) {
-            // تطبيق العقوبة فقط إذا كانت الرتبة أقل من S
-            if (RANKS.indexOf(currentUserRank) < RANKS.indexOf("S")) {
-                const { newPoints, newAdjustments } = applyPenalty(currentUserRank, currentUserPoints, currentAdjustments);
-                Storage.saveUserPoints(newPoints); // حفظ النقاط بعد الخصم
-                Storage.saveDailyExerciseAdjustments(newAdjustments); // حفظ تعديلات العقوبات
-                alert(`لم تكمل مهام الأمس! تم خصم ${Math.floor(currentUserPoints - newPoints)} نقطة. وزادت صعوبة بعض تمارينك.`);
-                consecutiveDays = 0; // إعادة تعيين الأيام المتتالية عند عدم الإكمال
-                Storage.saveConsecutiveDaysCompleted(consecutiveDays); // حفظ تحديث الأيام المتتالية
-            }
-        } 
-        // لا توجد كتلة `else` لإضافة النقاط هنا بعد الآن، لأنها تتم في `completeExercise()`
-
+        // تطبيق العقوبة فقط إذا لم تكتمل المهام في اليوم السابق والرتبة أقل من S
+        if (!allExercisesDone && currentRankIndex < sRankIndex) {
+            const { newPoints, newAdjustments } = applyPenalty(currentUserRank, currentUserPoints, currentAdjustments);
+            Storage.saveUserPoints(newPoints); // حفظ النقاط بعد الخصم
+            Storage.saveDailyExerciseAdjustments(newAdjustments); // حفظ تعديلات العقوبات
+            alert(`لم تكمل مهام الأمس! تم خصم ${Math.floor(currentUserPoints - newPoints)} نقطة. وزادت صعوبة بعض تمارينك.`);
+            consecutiveDays = 0; // إعادة تعيين الأيام المتتالية عند عدم الإكمال
+            Storage.saveConsecutiveDaysCompleted(consecutiveDays); // حفظ تحديث الأيام المتتالية
+        } else if (allExercisesDone) {
+            // إذا أكمل جميع المهام في اليوم السابق، الأيام المتتالية تزداد (تم التعامل معها بالفعل في completeExercise)
+            // ولا يتم خصم نقاط ولا عقوبات
+        } else if (!allExercisesDone && currentRankIndex >= sRankIndex) {
+            // لا يتم تطبيق عقوبات على رتبة S فما فوق
+            alert('لم تكمل مهام الأمس، لكن العقوبات لا تطبق على رتبتك (S فما فوق).');
+            consecutiveDays = 0; // إعادة تعيين الأيام المتتالية حتى لو لم يكن هناك خصم نقاط
+            Storage.saveConsecutiveDaysCompleted(consecutiveDays);
+        }
+        
         // دائماً قم بتحديث تاريخ آخر إعادة تعيين وحالة التمارين لليوم الجديد
         Storage.saveLastDailyResetDate(now);
-        // إعادة تعيين التمارين لليوم الجديد (كلها false)
+        // إعادة تعيين التمارين لليوم الجديد (كلها false) بناءً على الرتبة الحالية
         Storage.resetDailyExerciseStatus();
 
         // تحديث الواجهة بعد أي تغييرات (مثل خصم النقاط)
         updateDashboardHeader();
-        const updatedRank = Storage.getUserRank();
+        // الحصول على حالة التمارين والتعديلات المحدثة بعد إعادة التعيين
         const updatedStatus = Storage.getDailyExerciseStatus();
         const updatedAdjustments = Storage.getDailyExerciseAdjustments();
+        // يجب الحصول على الرتبة المحدثة هنا في حالة وجود ترقية سابقة
+        const updatedRank = Storage.getUserRank(); 
         updateDailyExercisesDisplay(updatedRank, updatedStatus, updatedAdjustments);
 
-        // التحقق من الترقية بعد خصم النقاط (إذا تم)
+        // التحقق من الترقية بعد أي خصم نقاط (إذا تم)
         checkAndUpgradeRank();
     }
 }
@@ -304,8 +332,8 @@ function applyPenalty(rank, currentPoints, currentAdjustments) {
 
     const newAdjustments = { ...currentAdjustments }; // نسخ التعديلات الحالية
     
-    // زيادة صعوبة الت تمارين بنسبة مئوية (مثلاً 10%)
-    const penaltyIncreaseRatio = 0.10; // زيادة 10%
+    // زيادة صعوبة التمارين بنسبة (1/3 = 33%) من القيمة الأساسية
+    const penaltyIncreaseRatio = PENALTY_EXERCISE_INCREASE_RATIO; 
 
     // زيادة صعوبة تمارين معينة بناءً على الرتبة
     const exercisesForRank = EXERCISES_BY_RANK[rank].exercises;
